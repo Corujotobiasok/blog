@@ -121,7 +121,7 @@ class WordPressConnector:
             return False
 
     def upload_media(self, image_url, title):
-        """Sube una imagen a la biblioteca de medios"""
+    
         try:
             # Descargar la imagen primero
             headers = {
@@ -132,10 +132,12 @@ class WordPressConnector:
             
             # Preparar datos para subir
             filename = f"media_{int(time.time())}.jpg"
-            files = {
-                'file': (filename, image_response.content, 'image/jpeg')
-            }
             
+            # Crear un archivo temporal en memoria
+            from io import BytesIO
+            image_file = BytesIO(image_response.content)
+            
+            # Configurar los datos para la subida
             data = {
                 'title': title,
                 'caption': f"Imagen para: {title}",
@@ -143,11 +145,26 @@ class WordPressConnector:
                 'description': f"Imagen ilustrativa para el artículo: {title}"
             }
             
-            # Subir la imagen
-            response = self.session.post(
+            # Configurar los archivos para la subida
+            files = {
+                'file': (filename, image_file, 'image/jpeg')
+            }
+            
+            # Subir la imagen con autenticación básica
+            auth = HTTPBasicAuth(WP_USER, WP_APP_PASSWORD)
+            
+            # Headers adicionales para la subida
+            headers = {
+                'Content-Disposition': f'attachment; filename={filename}',
+                'Cache-Control': 'no-cache'
+            }
+            
+            response = requests.post(
                 WP_MEDIA_URL,
+                auth=auth,
                 files=files,
                 data=data,
+                headers=headers,
                 timeout=20
             )
             
